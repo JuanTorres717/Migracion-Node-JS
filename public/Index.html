@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Asistente de Agendamiento</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .chat-message { 
+            margin: 10px 0;
+            display: flex;
+        }
+        .user-message { justify-content: flex-end; }
+        .bot-message { justify-content: flex-start; }
+        .message-content {
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .user-bubble { background-color: #DCF8C6; }
+        .bot-bubble { background-color: #f1f5cb; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <div class="w-80 bg-white p-6 shadow-lg">
+            <div class="text-center mb-8">
+                <a href="https://www.segurosbolivar.com/" target="_blank">
+                    <img src="https://d9b6rardqz97a.cloudfront.net/staticImagesFront/seguros-color.svg" 
+                         alt="Seguros Bolivar" 
+                         class="w-48 mx-auto -mt-8">
+                </a>
+            </div>
+            <p class="mb-4 text-sm">Bienvenido al Asistente de Agendamiento de citas médicas del Seguro de Salud. Para comenzar, introduzca los datos solicitados:</p>
+            <select id="cedula" class="w-full p-2 border rounded mb-4">
+                <option value="">Selecciona una identificación</option>
+            </select>
+            <input type="email" id="email" class="w-full p-2 border rounded" placeholder="Correo electrónico" readonly>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <div class="bg-white p-4 shadow-lg">
+                <h1 class="text-2xl font-bold">Asistente de Agendamiento</h1>
+                <p class="text-sm text-gray-500">🚀 AI Lab</p>
+            </div>
+            
+            <div id="chat-container" class="flex-1 p-4 overflow-y-auto"></div>
+            
+            <div class="bg-white p-4 border-t">
+                <div class="flex gap-2">
+                    <input type="text" id="message-input" 
+                           class="flex-1 p-2 border rounded" 
+                           placeholder="Realiza tu consulta...">
+                    <button onclick="sendMessage()" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Enviar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const datosUsuarios = {
+            "1144061892": {
+                "Número de identificación del cliente": 1144061892,
+                "Tipo de identificación del cliente": "CC",
+                "Número de póliza": "1010506065201",
+                "Correo electrónico": "registrotp16@yopmail.com"
+            },
+            "52698467": {
+                "Número de identificación del cliente": 52698467,
+                "Tipo de identificación del cliente": "CC",
+                "Número de póliza": "1010506065701",
+                "Correo electrónico": "pilito004@yopmail.com"
+            },
+            "1017325451": {
+                "Número de identificación del cliente": 1017325451,
+                "Tipo de identificación del cliente": "CC",
+                "Número de póliza": "1010506065501",
+                "Correo electrónico": "camiloferrer@yopmail.com"
+            },
+            "79872427": {
+                "Número de identificación del cliente": 79872427,
+                "Tipo de identificación del cliente": "CC",
+                "Número de póliza": "1001501971505",
+                "Correo electrónico": "carloslopez@gmail.com"
+            },
+            "1075232142": {
+                "Número de identificación del cliente": 1075232142,
+                "Tipo de identificación del cliente": "CC",
+                "Número de póliza": "1500510375701",
+                "Correo electrónico": "pilito04@yopmail.com"
+            },
+            "1019045674": {
+                "Número de identificación del cliente": 1019045674,
+                "Tipo de identificación del cliente": "CC",
+                "Número de póliza": "1003692188702",
+                "Correo electrónico": "rene@yopmail.com"
+    }
+
+};
+
+        // Initialize
+        const select = document.getElementById('cedula');
+        Object.keys(datosUsuarios).forEach(cedula => {
+            const option = document.createElement('option');
+            option.value = cedula;
+            option.textContent = cedula;
+            select.appendChild(option);
+        });
+
+        select.addEventListener('change', (e) => {
+            const userData = datosUsuarios[e.target.value];
+            document.getElementById('email').value = userData ? userData["Correo electrónico"] : '';
+        });
+
+        // Chat functions
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+
+        function addMessage(content, isUser) {
+            const div = document.createElement('div');
+            div.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+            div.innerHTML = `
+                <div class="message-content ${isUser ? 'user-bubble' : 'bot-bubble'}">
+                    ${content}
+                </div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Initial message
+        addMessage("¡Hola! 😊\nEs un gusto ayudarle con el agendamiento de sus citas médicas del Seguro de Salud. Puedo programar citas presenciales en Bogotá y virtuales en todo el país.\nSi ya tiene una especialidad en mente ¡hágamelo saber! 🩺\nRecuerde que por ahora solo puedo gestionar sus citas personales. ¡Comencemos! 🚀", false);
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            const cedula = document.getElementById('cedula').value;
+            
+            if (!message || !cedula) return;
+            
+            addMessage(message, true);
+            messageInput.value = '';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: message, cedula })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    addMessage(data.error, false);
+                } else {
+                    addMessage(data.message || data, false);
+                }
+            } catch (error) {
+                addMessage('Error de conexión. Por favor, intenta de nuevo.', false);
+            }
+        }
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
