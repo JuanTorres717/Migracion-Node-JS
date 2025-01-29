@@ -95,7 +95,7 @@ app.post('/api/chat', async (req, res) => {
         res.json(response.data);
     } catch (error) {
         res.json({
-            message: "¡Ups! Algo salió mal. Inténtelo nuevamente más tarde ¡Gracias por su comprensión! 💚"
+            message: "¡Ups! Parece que algo está saliendo mal. No puedo ayudarle en este momento, pero no se preocupe, estamos trabajando para solucionarlo, inténtelo nuevamente más tarde ¡Gracias por su comprensión! 💚"
         });
     }
 });

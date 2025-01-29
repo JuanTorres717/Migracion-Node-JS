@@ -3,6 +3,7 @@
 <head>
     <title>Asistente de Agendamiento</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .chat-message { 
             margin: 10px 0;
@@ -18,6 +19,14 @@
         }
         .user-bubble { background-color: #DCF8C6; }
         .bot-bubble { background-color: #f1f5cb; }
+        /* Enlaces estilo azul */
+        .message-content a {
+            color: #1D4ED8; /* Azul típico */
+            text-decoration: underline;
+        }
+        .message-content a:hover {
+            color: #2563EB; /* Azul más intenso al pasar el cursor */
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -28,10 +37,10 @@
                 <a href="https://www.segurosbolivar.com/" target="_blank">
                     <img src="https://d9b6rardqz97a.cloudfront.net/staticImagesFront/seguros-color.svg" 
                          alt="Seguros Bolivar" 
-                         class="w-48 mx-auto -mt-8">
+                         class="w-500 mx-auto -mt-0">
                 </a>
             </div>
-            <p class="mb-4 text-sm">Bienvenido al Asistente de Agendamiento de citas médicas del Seguro de Salud. Para comenzar, introduzca los datos solicitados:</p>
+            <p class="mb-7 text-sm">Bienvenido al Asistente de Agendamiento de citas médicas del Seguro de Salud. Para comenzar, introduzca los datos solicitados:</p>
             <select id="cedula" class="w-full p-2 border rounded mb-4">
                 <option value="">Selecciona una identificación</option>
             </select>
@@ -41,7 +50,7 @@
         <!-- Main Content -->
         <div class="flex-1 flex flex-col">
             <div class="bg-white p-4 shadow-lg">
-                <h1 class="text-2xl font-bold">Asistente de Agendamiento</h1>
+                <h1 class="text-4xl text-gray-800 font-bold">Asistente de Agendamiento</h1>
                 <p class="text-sm text-gray-500">🚀 AI Lab</p>
             </div>
             
@@ -98,11 +107,10 @@
                 "Tipo de identificación del cliente": "CC",
                 "Número de póliza": "1003692188702",
                 "Correo electrónico": "rene@yopmail.com"
-    }
+            }
 
-};
+        };
 
-        // Initialize
         const select = document.getElementById('cedula');
         Object.keys(datosUsuarios).forEach(cedula => {
             const option = document.createElement('option');
@@ -116,32 +124,45 @@
             document.getElementById('email').value = userData ? userData["Correo electrónico"] : '';
         });
 
-        // Chat functions
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message-input');
+        let processingMessage = null;
 
-        function addMessage(content, isUser) {
+        function addMessage(content, isUser, isMarkdown = false) {
             const div = document.createElement('div');
             div.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+            const formattedContent = isMarkdown ? marked.parse(content) : content;
             div.innerHTML = `
                 <div class="message-content ${isUser ? 'user-bubble' : 'bot-bubble'}">
-                    ${content}
+                    ${formattedContent}
                 </div>`;
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Initial message
-        addMessage("¡Hola! 😊\nEs un gusto ayudarle con el agendamiento de sus citas médicas del Seguro de Salud. Puedo programar citas presenciales en Bogotá y virtuales en todo el país.\nSi ya tiene una especialidad en mente ¡hágamelo saber! 🩺\nRecuerde que por ahora solo puedo gestionar sus citas personales. ¡Comencemos! 🚀", false);
-
         async function sendMessage() {
             const message = messageInput.value.trim();
             const cedula = document.getElementById('cedula').value;
-            
+
             if (!message || !cedula) return;
-            
+
             addMessage(message, true);
             messageInput.value = '';
+
+            // Mostrar "Escribiendo..." con un spinner animado
+            processingMessage = document.createElement('div');
+            processingMessage.className = 'chat-message bot-message';
+            processingMessage.innerHTML = `
+            <div class="message-content bot-bubble flex items-center gap-2">
+                <svg class="h-6 w-6 animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8" stroke="yellow" stroke-width="4" class="opacity-30"></circle>
+                    <circle cx="12" cy="12" r="8" stroke="green" stroke-width="4" class="opacity-75" stroke-dasharray="15 30" stroke-linecap="round"></circle>
+                </svg>
+                Escribiendo...
+            </div>`;
+
+            chatContainer.appendChild(processingMessage);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
 
             try {
                 const response = await fetch('/api/chat', {
@@ -151,19 +172,36 @@
                 });
 
                 const data = await response.json();
+                processingMessage.remove();
+                processingMessage = null;
+
                 if (data.error) {
                     addMessage(data.error, false);
                 } else {
-                    addMessage(data.message || data, false);
+                    let responseMessage = data.message || data;
+
+                    responseMessage = responseMessage
+                        .replace(/enlace en línea/gi, '**[enlace en línea](#)**')
+                        .replace(/Confirmo/gi, '**Confirmo**')
+                        .replace(/Continuar/gi, '**Continuar**')
+                        .replace(/Agenda de Citas Médicas:/gi, '**Agenda de Citas Médicas:**');
+            
+                    addMessage(responseMessage, false, true);
                 }
             } catch (error) {
+                processingMessage.remove();
+                processingMessage = null;
                 addMessage('Error de conexión. Por favor, intenta de nuevo.', false);
             }
         }
 
+
+
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
+
+        addMessage("¡Hola! 😊 <br> Es un gusto ayudarle con el agendamiento de sus citas médicas del Seguro de Salud. Puedo programar citas presenciales en Bogotá y virtuales en todo el país.\nSi ya tiene una especialidad en mente ¡hágamelo saber! 🩺 <br> Recuerde que por ahora solo puedo gestionar sus citas personales. ¡Comencemos! 🚀", false);
     </script>
 </body>
 </html>
