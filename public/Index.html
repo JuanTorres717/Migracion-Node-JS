@@ -19,18 +19,19 @@
         }
         .user-bubble { background-color: #DCF8C6; }
         .bot-bubble { background-color: #f1f5cb; }
-        /* Enlaces estilo azul */
+
         .message-content a {
-            color: #1D4ED8; /* Azul típico */
+            color: #1D4ED8; 
             text-decoration: underline;
         }
         .message-content a:hover {
-            color: #2563EB; /* Azul más intenso al pasar el cursor */
+            color: #2563EB; 
         }
     </style>
 </head>
 <body class="bg-gray-100">
     <div class="flex min-h-screen">
+
         <!-- Sidebar -->
         <div class="w-80 bg-white p-6 shadow-lg">
             <div class="text-center mb-8">
@@ -149,7 +150,6 @@
             addMessage(message, true);
             messageInput.value = '';
 
-            // Mostrar "Escribiendo..." con un spinner animado
             processingMessage = document.createElement('div');
             processingMessage.className = 'chat-message bot-message';
             processingMessage.innerHTML = `
@@ -194,8 +194,6 @@
                 addMessage('Error de conexión. Por favor, intenta de nuevo.', false);
             }
         }
-
-
 
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
